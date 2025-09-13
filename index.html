@@ -66,9 +66,9 @@
               type="text"
               class="form-control"
               placeholder="Search..."
-              aria-label="Search"
+              aria-label="Search"  id="searchBox"
             />
-            <button class="btn btn-primary">Search</button>
+            <button class="btn btn-primary" id="searchBtn" >Search</button>
           </div>
 
           <!-- Table -->
@@ -227,7 +227,11 @@
                   placeholder="Enter tags"
                 />
               </div>
-              <button type="submit" class="btn btn-primary w-100">
+              <button
+                type="submit"
+                class="btn btn-primary w-100"
+                id="updateBtn"
+              >
                 Update
               </button>
             </form>
@@ -240,133 +244,196 @@
 
     <script src="js/jquery-3.7.1.min.js"></script>
 
-    <script>
-      $(document).ready(function () {
-        function loadTable() {
-          $.ajax({
-            url: "http://localhost/PHP-projects/blog-crud-api/fetch_All_APIs.php",
-            type: "GET",
-            success: function (data) {
-              // console.log(data)
-              if (data.status == false) {
-                $(".table").append(
-                  "<tbody><tr><td><h2>" +
-                    data.message +
-                    "</h2></td></tr></tbody>"
-                );
-              } else {
-                // Clear old rows first
-                $(".table tbody").empty();
+ <script>
+   
+  $(document).ready(function () {
+    // ========== Load Table ==========
+    function loadTable(searchTerm = "") {
+      $.ajax({
+        url: "http://localhost/PHP-projects/blog-crud-api/search-api.php",
+        type: "GET",
+        data: { search: searchTerm }, // pass search keyword to backend
+        success: function (data) {
+  if (data.status == false) {
+    $(".table tbody").html(
+      "<tr><td colspan='6'><h2 class='text-center'>" +
+        data.message +
+        "</h2></td></tr>"
+    );
+  } else {
+    $(".table tbody").empty();
 
-                $.each(data, function (key, value) {
-                  // console.log("Row Data:" , value.category);
-                  let row = `
-            
-
+    // ✅ loop only inside data.data
+    $.each(data.data, function (key, value) {
+      let row = `
         <tr>
-            <td>${value.id}</td>
-             <td>${value.title}</td>
-             <td>${value.content}</td>
-             <td>${value.category}</td>
-             <td>${value.tags}</td>
-            <td>
-                <button class="btn btn-warning btn-sm editBtn"      
-                 data-bs-toggle="modal"  data-bs-target="#editModal" data-eid='${value.id}'>Edit</button>
-                <button class="btn btn-danger btn-sm deleteBtn" data-id='${value.id}'>Delete</button>
-            </td>
+          <td>${value.id}</td>
+          <td>${value.title}</td>
+          <td>${value.content}</td>
+          <td>${value.category}</td>
+          <td>${value.tags}</td>
+          <td>
+            <button class="btn btn-warning btn-sm editBtn"      
+             data-bs-toggle="modal"  
+             data-bs-target="#editModal" 
+             data-eid='${value.id}'>Edit</button>
+            <button class="btn btn-danger btn-sm deleteBtn" data-id='${value.id}'>Delete</button>
+          </td>
         </tr>
-        `;
-                  $(".table tbody").append(row);
-                });
-              }
-            },
-          });
+      `;
+      $(".table tbody").append(row);
+    });
+  }
+},
+        error: function (xhr) {
+          console.error("Error loading table:", xhr.responseText);
         }
+      });
+    }
 
-        loadTable();
+    loadTable();
 
-        $("#addPostForm").on("submit", function (e) {
-          e.preventDefault(); // stop page reload
+    // ========== Add New Post ==========
+    $("#addPostForm").on("submit", function (e) {
+      e.preventDefault();
 
-          let formData = {
-            title: $("#newTitle").val().trim(),
-            content: $("#newContent").val().trim(),
-            category: $("#newCategory").val().trim(),
-            tags: $("#newTags").val().trim(),
-          };
+      let formData = {
+        title: $("#newTitle").val().trim(),
+        content: $("#newContent").val().trim(),
+        category: $("#newCategory").val().trim(),
+        tags: $("#newTags").val().trim(),
+      };
 
-          // Check if any field is empty
-          if (
-            !formData.title ||
-            !formData.content ||
-            !formData.category ||
-            !formData.tags
-          ) {
-            $("#formAlert").removeClass("d-none").fadeIn();
-            setTimeout(() => $("#formAlert").fadeOut(), 4000);
-            return; // stop further execution
+      if (!formData.title || !formData.content || !formData.category || !formData.tags) {
+        $("#formAlert").removeClass("d-none").fadeIn();
+        setTimeout(() => $("#formAlert").fadeOut(), 4000);
+        return;
+      }
+
+      $("#formAlert").addClass("d-none");
+
+      $.ajax({
+        url: "http://localhost/PHP-projects/blog-crud-api/insert-api.php",
+        type: "POST",
+        data: JSON.stringify(formData),
+        contentType: "application/json",
+        success: function (response) {
+          $("#formAlertSuccess").removeClass("d-none").fadeIn();
+          setTimeout(() => $("#formAlertSuccess").fadeOut(), 4000);
+
+          $("#addPostForm")[0].reset();
+          $("#addModal").modal("hide");
+          loadTable();
+        },
+        error: function () {
+          alert("Something went wrong while inserting data.");
+        }
+      });
+    });
+
+    // ========== Edit Button ==========
+    $(document).on("click", ".editBtn", function () {
+      var stdId = $(this).data("eid");
+
+      $.ajax({
+        url: "http://localhost/PHP-projects/blog-crud-api/fetch-single.php",
+        method: "POST",
+        data: JSON.stringify({ bid: stdId }),
+        contentType: "application/json",
+        success: function (data) {
+          if (data.status) {
+            $("#postId").val(stdId);
+            $("#postTitle").val(data.message.title);
+            $("#postContent").val(data.message.content);
+            $("#postCategory").val(data.message.category);
+            $("#postTags").val(data.message.tags);
+          } else {
+            alert(data.message);
           }
-
-          // Hide alert
-          $("#formAlert").addClass("d-none");
-
-          // ✅ Show console data
-          console.log("Form Data:", formData);
-
-          // ✅ Ajax call (example)
-          $.ajax({
-            url: "http://localhost/PHP-projects/blog-crud-api/insert-api.php", // your backend insert file
-            type: "POST",
-            data: JSON.stringify(formData),
-            contentType: "application/json",
-            success: function (response) {
-              $("#formAlertSuccess").removeClass("d-none").fadeIn();
-              setTimeout(() => $("#formAlertSuccess").fadeOut(), 4000);
-
-              console.log("Server Response:", response);
-
-              // Optionally reset form & close modal
-              $("#addPostForm")[0].reset();
-              $("#addModal").modal("hide");
-              loadTable();
-            },
-            error: function () {
-              alert("Something went wrong while inserting data.");
-            },
-          });
-        });
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX Error:", error);
+        }
       });
-      // insert data into db
+    });
 
-      // Handle Add Form Submit
+    // ========== Update Post ==========
+    $(document).on("click", "#updateBtn", function (e) {
+      e.preventDefault();
 
-      // edit data in form fields
-      $(document).on("click", ".editBtn", function () {
-        var stdId = $(this).data("eid");
+      let updatedData = {
+        bid: $("#postId").val(),
+        title: $("#postTitle").val().trim(),
+        content: $("#postContent").val().trim(),
+        category: $("#postCategory").val().trim(),
+        tags: $("#postTags").val().trim(),
+      };
 
-        $.ajax({
-          url: "http://localhost/PHP-projects/blog-crud-api/fetch-single.php",
-          method: "POST",
-          data: JSON.stringify({ bid: stdId }),
-          contentType: "application/json",
-          success: function (data) {
-            console.log("Fetched Data:", data);
+      $.ajax({
+        url: "http://localhost/PHP-projects/blog-crud-api/update-api.php",
+        method: "POST",
+        data: JSON.stringify(updatedData),
+        contentType: "application/json",
+        success: function (data) {
+          console.log("Update Response:", data);
 
-            if (data.status) {
-              $("#postId").val(stdId);
-              $("#postTitle").val(data.message.title);
-              $("#postContent").val(data.message.content);
-              $("#postCategory").val(data.message.category);
-              $("#postTags").val(data.message.tags);
-            } else {
-              alert(data.message);
-            }
-          },
-          error: function (xhr, status, error) {
-            console.error("AJAX Error:", error);
-          },
-        });
+          if (data.status) {
+            $("#editModal").modal("hide");
+            loadTable();
+            $("#formAlertSuccess")
+              .text("✅ Post updated successfully!")
+              .removeClass("d-none")
+              .fadeIn();
+            setTimeout(() => $("#formAlertSuccess").fadeOut(), 4000);
+          } else {
+            alert(data.message);
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX Error:", error);
+        }
       });
-    </script>
+    });
+
+    // ========== Delete Post ==========
+    $(document).on("click", ".deleteBtn", function () {
+      let id = $(this).data("id");
+
+      if (!confirm("⚠️ Are you sure you want to delete this post?")) {
+        return;
+      }
+
+      $.ajax({
+        url: "http://localhost/PHP-projects/blog-crud-api/delete-api.php",
+        method: "POST",
+        data: JSON.stringify({ bid: id }),
+        contentType: "application/json",
+        success: function (data) {
+          if (data.status) {
+            loadTable();
+            $("#formAlertSuccess")
+              .text("🗑️ Post deleted successfully!")
+              .removeClass("d-none")
+              .fadeIn();
+            setTimeout(() => $("#formAlertSuccess").fadeOut(), 4000);
+          } else {
+            alert(data.message);
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX Error:", error);
+        }
+      });
+    });
+
+    // ========== Search ==========
+    $("#searchBox").on("keyup", function () {
+      let keyword = $(this).val().trim();
+      loadTable(keyword);
+    });
+  });
+</script>
+
+    
   </body>
 </html>
