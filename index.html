@@ -3,18 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fetch API Design</title>
+    <title>Fetch bloging API</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
+    <style>
+      .custom-alert {
+        width: 30%;
+        position: absolute;
+        top: -65px; /* above card */
+        right: 20px; /* stick to right side */
+        z-index: 1000;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        padding: 20px;
+      }
+      .container {
+        margin-top: 90px;
+      }
+    </style>
   </head>
+
   <body class="bg-light">
-    <div class="container my-5">
-      <div class="card shadow-lg rounded-4">
+    <div class="container">
+      <div class="card shadow-lg rounded-4 position-relative">
+        <!-- Alerts -->
+        <div
+          class="alert custom-alert d-none"
+          id="formAlert"
+          style="background-color: red; color: white"
+        >
+          ⚠️ Please fill all fields!
+        </div>
+        <div
+          class="alert custom-alert d-none"
+          id="formAlertSuccess"
+          style="background-color: green; color: white"
+        >
+          ✅ Successfully inserted!
+        </div>
+
         <div class="card-body">
-          <!-- Heading -->
-          <h3 class="card-title text-center mb-4">Fetch API</h3>
+          <!-- Heading + Add New Button -->
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="card-title mb-0">Fetch API</h3>
+            <button
+              class="btn btn-success"
+              data-bs-toggle="modal"
+              data-bs-target="#addModal"
+            >
+              + Add New
+            </button>
+          </div>
 
           <!-- Search Bar -->
           <div class="input-group mb-4">
@@ -43,49 +87,87 @@
                   <th>Actions</th>
                 </tr>
               </thead>
-              <!-- <tbody> -->
-              <tr>
-                <td>1</td>
-                <td>First Post</td>
-                <td>This is my first blog</td>
-                <td>Technology</td>
-                <td>HTML, CSS</td>
-                <td>
-                  <button
-                    class="btn btn-warning btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#editModal"
-                  >
-                    Edit
-                  </button>
-                  <button class="btn btn-danger btn-sm">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2</td>
-                <td>Second Post</td>
-                <td>This is my Second blog</td>
-                <td>Programming</td>
-                <td>PHP, API</td>
-                <td>
-                  <button
-                    class="btn btn-warning btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#editModal"
-                  >
-                    Edit
-                  </button>
-                  <button class="btn btn-danger btn-sm">Delete</button>
-                </td>
-              </tr>
-              <!-- </tbody> -->
+              <tbody></tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- ✅ Add New Modal -->
+    <div
+      class="modal fade"
+      id="addModal"
+      tabindex="-1"
+      aria-labelledby="addModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content rounded-4 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addModalLabel">Add New blog</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="addPostForm">
+              <div class="mb-3">
+                <label for="newTitle" class="form-label">Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newTitle"
+                  placeholder="Enter title"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newContent" class="form-label">Content</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newContent"
+                  placeholder="Enter content"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newCategory" class="form-label">Category</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newCategory"
+                  placeholder="Enter category"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newTags" class="form-label">Tags</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newTags"
+                  placeholder="Enter tags"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                class="btn btn-success w-100"
+                id="save_button"
+              >
+                Add
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ Edit Modal -->
     <div
       class="modal fade"
       id="editModal"
@@ -96,7 +178,7 @@
       <div class="modal-dialog">
         <div class="modal-content rounded-4 shadow">
           <div class="modal-header">
-            <h5 class="modal-title" id="editModalLabel">Edit Post</h5>
+            <h5 class="modal-title" id="editModalLabel">Edit blog</h5>
             <button
               type="button"
               class="btn-close"
@@ -104,7 +186,7 @@
             ></button>
           </div>
           <div class="modal-body">
-            <form>
+            <form id="editPostForm">
               <div class="mb-3">
                 <label for="postId" class="form-label">ID</label>
                 <input type="text" class="form-control" id="postId" readonly />
@@ -162,35 +244,39 @@
       $(document).ready(function () {
         function loadTable() {
           $.ajax({
-            url: "http://localhost/PHP-projects/blogging_platform_API/fetch_All_APIs.php",
+            url: "http://localhost/PHP-projects/blog-crud-api/fetch_All_APIs.php",
             type: "GET",
             success: function (data) {
+              // console.log(data)
               if (data.status == false) {
-                $("#loadTable").append(
+                $(".table").append(
                   "<tbody><tr><td><h2>" +
                     data.message +
                     "</h2></td></tr></tbody>"
                 );
               } else {
                 // Clear old rows first
-                $("#loadTable tbody").empty();
+                $(".table tbody").empty();
 
                 $.each(data, function (key, value) {
+                  // console.log("Row Data:" , value.category);
                   let row = `
+            
+
         <tr>
             <td>${value.id}</td>
-            <td>${value.title}</td>
-            <td>${value.content}</td>
-            <td>${value.category}</td>
-            <td>${value.tags}</td>
+             <td>${value.title}</td>
+             <td>${value.content}</td>
+             <td>${value.category}</td>
+             <td>${value.tags}</td>
             <td>
                 <button class="btn btn-warning btn-sm editBtn"      
-                        data-bs-toggle="modal" 
-                        data-bs-target="#editModal" data-eid='${value.id}'>Edit</button>
+                 data-bs-toggle="modal"  data-bs-target="#editModal" data-eid='${value.id}'>Edit</button>
                 <button class="btn btn-danger btn-sm deleteBtn" data-id='${value.id}'>Delete</button>
             </td>
-        </tr>`;
-                  $("#loadTable tbody").append(row);
+        </tr>
+        `;
+                  $(".table tbody").append(row);
                 });
               }
             },
@@ -198,12 +284,89 @@
         }
 
         loadTable();
-      }); 
 
-        $("#editModal").click(function (){
-            
-        })
-       
+        $("#addPostForm").on("submit", function (e) {
+          e.preventDefault(); // stop page reload
+
+          let formData = {
+            title: $("#newTitle").val().trim(),
+            content: $("#newContent").val().trim(),
+            category: $("#newCategory").val().trim(),
+            tags: $("#newTags").val().trim(),
+          };
+
+          // Check if any field is empty
+          if (
+            !formData.title ||
+            !formData.content ||
+            !formData.category ||
+            !formData.tags
+          ) {
+            $("#formAlert").removeClass("d-none").fadeIn();
+            setTimeout(() => $("#formAlert").fadeOut(), 4000);
+            return; // stop further execution
+          }
+
+          // Hide alert
+          $("#formAlert").addClass("d-none");
+
+          // ✅ Show console data
+          console.log("Form Data:", formData);
+
+          // ✅ Ajax call (example)
+          $.ajax({
+            url: "http://localhost/PHP-projects/blog-crud-api/insert-api.php", // your backend insert file
+            type: "POST",
+            data: JSON.stringify(formData),
+            contentType: "application/json",
+            success: function (response) {
+              $("#formAlertSuccess").removeClass("d-none").fadeIn();
+              setTimeout(() => $("#formAlertSuccess").fadeOut(), 4000);
+
+              console.log("Server Response:", response);
+
+              // Optionally reset form & close modal
+              $("#addPostForm")[0].reset();
+              $("#addModal").modal("hide");
+              loadTable();
+            },
+            error: function () {
+              alert("Something went wrong while inserting data.");
+            },
+          });
+        });
+      });
+      // insert data into db
+
+      // Handle Add Form Submit
+
+      // edit data in form fields
+      $(document).on("click", ".editBtn", function () {
+        var stdId = $(this).data("eid");
+
+        $.ajax({
+          url: "http://localhost/PHP-projects/blog-crud-api/fetch-single.php",
+          method: "POST",
+          data: JSON.stringify({ bid: stdId }),
+          contentType: "application/json",
+          success: function (data) {
+            console.log("Fetched Data:", data);
+
+            if (data.status) {
+              $("#postId").val(stdId);
+              $("#postTitle").val(data.message.title);
+              $("#postContent").val(data.message.content);
+              $("#postCategory").val(data.message.category);
+              $("#postTags").val(data.message.tags);
+            } else {
+              alert(data.message);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error("AJAX Error:", error);
+          },
+        });
+      });
     </script>
   </body>
 </html>
