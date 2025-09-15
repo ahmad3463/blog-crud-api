@@ -1,6 +1,6 @@
 <?php
 include "config/db.php";
-session_start();
+
 header("Content-Type: application/json");
 
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
