@@ -1,5 +1,5 @@
 <?php
-
+session_start();
 $servername = "localhost";
 $dbname = "blogging_API";
 $username = "root";
